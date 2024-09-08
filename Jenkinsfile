@@ -14,9 +14,8 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
-                dir('Nodejs_Project') {  // Change to the directory where package.json is located
-                    sh 'npm install'
-                }
+                // Run npm install in the root directory where package.json is located
+                sh 'npm install'
             }
         }
         stage('Build') {
@@ -26,18 +25,19 @@ pipeline {
         }
         stage('Package Application') {
             steps {
-                dir('Nodejs_Project') {  // Ensure you're in the correct directory
-                    sh 'zip -r NodejsApp.zip *'
-                    script {
-                        def awsCli = sh(script: 'aws s3 cp NodejsApp.zip s3://$S3_BUCKET/', returnStdout: true)
-                        echo awsCli
-                    }
+                // Create a zip package of the application in the root directory
+                sh 'zip -r NodejsApp.zip *'
+                script {
+                    // Upload the zip package to your S3 bucket
+                    def awsCli = sh(script: 'aws s3 cp NodejsApp.zip s3://$S3_BUCKET/', returnStdout: true)
+                    echo awsCli
                 }
             }
         }
         stage('Deploy') {
             steps {
                 script {
+                    // Trigger deployment with AWS CodeDeploy
                     def deployCmd = """
                         aws deploy create-deployment --application-name $APPLICATION_NAME --deployment-group-name $DEPLOYMENT_GROUP --s3-location bucket=$S3_BUCKET,key=NodejsApp.zip,bundleType=zip
                     """
@@ -47,5 +47,6 @@ pipeline {
         }
     }
 }
+
 
 
