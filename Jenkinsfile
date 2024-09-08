@@ -1,43 +1,47 @@
 pipeline {
     agent any
-
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-        S3_BUCKET = 'your-s3-bucket'
-        APPLICATION_NAME = 'SimpleWebApp'
-        DEPLOYMENT_GROUP_NAME = 'WebAppDeploymentGroup'
+        AWS_DEFAULT_REGION = 'us-east-1'
+        APPLICATION_NAME = 'NodejsApp'  // Update with your CodeDeploy application name
+        DEPLOYMENT_GROUP = 'NodejsApp-DeploymentGroup'  // Update with your deployment group name
+        S3_BUCKET = 'nodejspo'
     }
-
     stages {
-        stage('Clone repository') {
+        stage('Clone Repository') {
             steps {
-                git 'https://github.com/Saru-12/Nodejs_Project.git'
+                git branch: 'main', url: 'https://github.com/Saru-12/Nodejs_Project.git'
             }
         }
-
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
             }
         }
-
-        stage('Package Application') {
+        stage('Build') {
             steps {
-                sh 'zip -r simple-web-app.zip *'
-                sh 'aws s3 cp simple-web-app.zip s3://$S3_BUCKET/'
+                echo 'Build Step'
+                // Add any build steps here if needed, or leave it as a placeholder
             }
         }
-
+        stage('Package Application') {
+            steps {
+                sh 'zip -r NodejsApp.zip *'
+                script {
+                    def awsCli = sh(script: 'aws s3 cp NodejsApp.zip s3://$S3_BUCKET/', returnStdout: true)
+                    echo awsCli
+                }
+            }
+        }
         stage('Deploy') {
             steps {
-                sh '''
-                aws deploy create-deployment --application-name $APPLICATION_NAME \
-                    --deployment-group-name $DEPLOYMENT_GROUP_NAME \
-                    --s3-location bucket=$S3_BUCKET,key=simple-web-app.zip,bundleType=zip \
-                    --region us-east-1
-                '''
+                script {
+                    def deployCmd = """
+                        aws deploy create-deployment --application-name $APPLICATION_NAME --deployment-group-name $DEPLOYMENT_GROUP --s3-location bucket=$S3_BUCKET,key=NodejsApp.zip,bundleType=zip
+                    """
+                    sh deployCmd
+                }
             }
         }
     }
 }
+
