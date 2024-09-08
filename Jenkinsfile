@@ -2,8 +2,8 @@ pipeline {
     agent any
     environment {
         AWS_DEFAULT_REGION = 'us-east-1'
-        APPLICATION_NAME = 'NodejsApp'  // Update with your CodeDeploy application name
-        DEPLOYMENT_GROUP = 'NodejsApp-DeploymentGroup'  // Update with your deployment group name
+        APPLICATION_NAME = 'NodejsApp'
+        DEPLOYMENT_GROUP = 'NodejsApp-DeploymentGroup'
         S3_BUCKET = 'nodejspo'
     }
     stages {
@@ -14,21 +14,24 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                dir('Nodejs_Project') {  // Change to the directory where package.json is located
+                    sh 'npm install'
+                }
             }
         }
         stage('Build') {
             steps {
                 echo 'Build Step'
-                // Add any build steps here if needed, or leave it as a placeholder
             }
         }
         stage('Package Application') {
             steps {
-                sh 'zip -r NodejsApp.zip *'
-                script {
-                    def awsCli = sh(script: 'aws s3 cp NodejsApp.zip s3://$S3_BUCKET/', returnStdout: true)
-                    echo awsCli
+                dir('Nodejs_Project') {  // Ensure you're in the correct directory
+                    sh 'zip -r NodejsApp.zip *'
+                    script {
+                        def awsCli = sh(script: 'aws s3 cp NodejsApp.zip s3://$S3_BUCKET/', returnStdout: true)
+                        echo awsCli
+                    }
                 }
             }
         }
@@ -44,4 +47,5 @@ pipeline {
         }
     }
 }
+
 
